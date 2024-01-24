@@ -6,6 +6,8 @@
 #     https://docs.scrapy.org/en/latest/topics/settings.html
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
+from .utils import get_random_agent
+
 
 BOT_NAME = "wiki_cinema_parser"
 
@@ -14,7 +16,7 @@ NEWSPIDER_MODULE = "wiki_cinema_parser.spiders"
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'
+USER_AGENT = get_random_agent()
 
 
 
