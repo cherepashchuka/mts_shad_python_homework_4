@@ -1,19 +1,19 @@
 import scrapy
-import re
 
 
 class FilmsruSpider(scrapy.Spider):
     name = "filmsru"
-    allowed_domains = ["ru.wikipedia.org"]
+    allowed_domains = ["ru.wikipedia.org","www.imdb.com"]
     start_urls = ["https://ru.wikipedia.org/wiki/Категория:Фильмы_по_алфавиту"]
 
     def list_cleaning(self, data):
-        symbols = ['\d', '\n', '[d]', '[1]', '[2]', '\xa0', ' ', ',', '/', '[3]', '[',']', '[4]', '[5]',
+        symbols = ['\d', '\n', '[d]', '[1]', '[2]', '\xa0', ' ', ',', '/', '[3]', '[', ']', '[4]', '[5]',
                    '[7]', '[6]', '[...]', '[…]', '[jp]', '[en]', 'рус.', 'англ.', ')', '(', ' / ', ' ,',
-                   '[9]', '[10]', '*', ', ', '«', '»', '*', '(англ)', '(рус)', '(фр)', '[da]','(яп)','(it)','(итал)',
-                   '[ko]','[zh]','[uk]', '[16]', '[—]', '[8]', '(англ)', '(фр.)', '[17]']
+                   '[9]', '[10]', '*', ', ', '«', '»', '*', '(англ)', '(рус)', '(фр)', '[da]', '(яп)', '(it)', '(итал)',
+                   '[ko]', '[zh]', '[uk]', '[16]', '[—]', '[8]', '(англ)', '(фр.)', '[17]']
 
-        return ';'.join(text.strip() for text in data if not text.strip() in symbols and text.strip() != '').replace(',','').replace('.','')
+        return ';'.join(text.strip() for text in data if not text.strip() in symbols and text.strip() != '').replace(
+            ',', '').replace('.', '')
 
     def parse(self, response):
         for link in response.css('div.mw-category a::attr(href)'):
@@ -26,7 +26,8 @@ class FilmsruSpider(scrapy.Spider):
     def parse_page(self, response):
 
         name = response.css('table.infobox th.infobox-above *::text').get()
-        genre = response.css('table.infobox[data-name="Фильм"] td.plainlist *[data-wikidata-property-id="P136"] *::text').getall()
+        genre = response.css(
+            'table.infobox[data-name="Фильм"] td.plainlist *[data-wikidata-property-id="P136"] *::text').getall()
         director = response.css('table.infobox td.plainlist span[data-wikidata-property-id="P57"] *::text').getall()
         country = response.css('table.infobox td.plainlist *[data-wikidata-property-id="P495"] span::text').getall()
         if country is None:
@@ -42,9 +43,9 @@ class FilmsruSpider(scrapy.Spider):
                 year = yr
                 break
 
-        imdb_url = response.css('table.infobox').css('td.plainlist').css('span[data-wikidata-property-id="P345"] a::attr(href)').get()
+        imdb_url = response.css('table.infobox td.plainlist span[data-wikidata-property-id="P345"] a::attr(href)').get()
 
-        yield {
+        result = {
             'name': name,
             'genre': genre,
             'director': director,
@@ -52,3 +53,12 @@ class FilmsruSpider(scrapy.Spider):
             'year': year,
             'imdb_url': imdb_url
         }
+        if imdb_url:
+            yield scrapy.Request(imdb_url, callback=self.parse_imdb, cb_kwargs={
+                'result': result
+            })
+
+    def parse_imdb(self, response, result):
+        result['imdb_rating'] = response.css(
+            'span.ipc-btn__text div[data-testid="hero-rating-bar__aggregate-rating__score"] *::text').extract_first()
+        yield result
